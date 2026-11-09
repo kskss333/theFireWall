@@ -1,95 +1,240 @@
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
+
+@font-face {
+  font-family: 'Scripter';
+  src: url('/fonts/Scripter.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --color-primary-50: #F0F3FC;
+  --color-primary-100: #DCE3F8;
+  --color-primary-200: #C0CCF3;
+  --color-primary-300: #9BADE9;
+  --color-primary-400: #7089DC;
+  --color-primary-500: #405BBC;
+  --color-primary-600: #344B9E;
+  --color-primary-700: #293B7E;
+  --color-primary-800: #1F2D60;
+  --color-primary-900: #161F43;
+
+  --color-accent-50: #FFF4EC;
+  --color-accent-100: #FEE6D6;
+  --color-accent-200: #FCD0B2;
+  --color-accent-300: #FAB484;
+  --color-accent-400: #F89D63;
+  --color-accent-500: #F88545;
+  --color-accent-600: #D96E34;
+  --color-accent-700: #B55729;
+  --color-accent-800: #8E421F;
+  --color-accent-900: #662E15;
+
+  --color-heading: #130361;
+  --color-text: #140F41;
+  --color-text-secondary: #5A5478;
+  --color-text-muted: #8F8AA6;
+
+  --color-bg: #FFF9EC;
+  --color-surface: #FFFFFF;
+  --color-surface-warm: #FFFDF7;
+
+  --color-border: #E8E3D5;
+  --color-border-light: #F1EDE2;
+
+  --color-success: #2E9E6B;
+  --color-success-light: #E8F7F0;
+  --color-warning: #F88545;
+  --color-warning-light: #FFF4EC;
+  --color-error: #D9534F;
+  --color-error-light: #FBECEC;
+  --color-info: #405BBC;
+  --color-info-light: #F0F3FC;
+
+  --font-heading: 'Scripter', 'Comfortaa', sans-serif;
+  --font-body: 'Comfortaa', sans-serif;
+
+  --text-display: 48px;
+  --text-h1: 36px;
+  --text-h2: 28px;
+  --text-h3: 22px;
+  --text-h4: 18px;
+  --text-body-large: 16px;
+  --text-body: 14px;
+  --text-body-small: 13px;
+  --text-caption: 12px;
+  --text-label: 11px;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 20px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --space-9: 64px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-4xl: 32px;
+
+  --shadow-xs: 0 1px 2px rgba(20, 15, 65, 0.04);
+  --shadow-sm: 0 2px 4px rgba(20, 15, 65, 0.05);
+  --shadow-md: 0 4px 12px rgba(20, 15, 65, 0.06);
+  --shadow-lg: 0 8px 24px rgba(20, 15, 65, 0.08);
+  --shadow-xl: 0 16px 40px rgba(20, 15, 65, 0.10);
+
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 250ms ease;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #F9FAFB;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--line-height-normal);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-heading);
+  line-height: var(--line-height-tight);
+  font-weight: 400;
+}
+
+h1 {
+  font-size: var(--text-h1);
+}
+
+h2 {
+  font-size: var(--text-h2);
+}
+
+h3 {
+  font-size: var(--text-h3);
+}
+
+h4 {
+  font-size: var(--text-h4);
+}
+
+a {
+  color: var(--color-primary-500);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-primary-600);
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, select, textarea {
+  font-family: var(--font-body);
 }
 
 #root {
   min-height: 100vh;
 }
 
-.fade-in {
-  animation: fadeIn 0.3s ease;
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.email-client {
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #FFF;
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
 }
 
-.email-client-header {
-  background: #F3F4F6;
-  padding: 12px 16px;
-  border-bottom: 1px solid #E5E7EB;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
-.email-client-body {
-  padding: 20px 24px;
-  min-height: 150px;
-  line-height: 1.7;
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-5);
 }
 
-.chat-container {
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #FFF;
-  display: flex;
-  flex-direction: column;
-  height: 420px;
+.page-enter {
+  animation: pageEnter 300ms ease-out;
 }
 
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: #F9FAFB;
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.chat-bubble {
-  max-width: 75%;
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-size: 14px;
-  line-height: 1.5;
+.ant-menu {
+  background: transparent !important;
+  font-family: 'Comfortaa', sans-serif;
 }
 
-.chat-bubble.attacker {
-  align-self: flex-start;
-  background: #FEE2E2;
-  color: #991B1B;
+.ant-menu-item {
+  color: rgba(255, 255, 255, 0.7) !important;
+  border-radius: 8px !important;
+  margin: 4px 0 !important;
+  padding: 10px 12px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 200ms ease !important;
 }
 
-.chat-bubble.user {
-  align-self: flex-end;
-  background: #DBEAFE;
-  color: #1E40AF;
+.ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #FFFFFF !important;
 }
 
-.chat-input-area {
-  padding: 12px 16px;
-  border-top: 1px solid #E5E7EB;
-  background: #FFF;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.ant-menu-item-selected {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.row-inactive {
-  background: #FEF2F2 !important;
+.ant-menu-item .anticon {
+  color: inherit !important;
 }

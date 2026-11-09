@@ -1,10 +1,11 @@
 import { http, HttpResponse, delay } from 'msw';
 import courses from '@/data/courses';
 
-const users = [
-  { id: 'u1', email: 'student@test.ru', username: 'StudentDemo', role: 'student', age: 15, parent_email: null, is_active: true },
-  { id: 'u2', email: 'teacher@test.ru', username: 'TeacherDemo', role: 'teacher', age: 30, parent_email: null, is_active: true },
-  { id: 'u3', email: 'admin@test.ru', username: 'AdminDemo', role: 'admin', age: 25, parent_email: null, is_active: true },
+let users = [
+  { id: 'u1', email: 'student@test.ru', username: 'StudentDemo', role: 'student' },
+  { id: 'u2', email: 'teacher@test.ru', username: 'TeacherDemo', role: 'teacher' },
+  { id: 'u3', email: 'admin@test.ru', username: 'AdminDemo', role: 'admin' },
+  { id: 'u4', email: 'parent@test.ru', username: 'ParentDemo', password: 'password', role: 'parent', isVerified: true },
 ];
 
 const groups = [
@@ -30,17 +31,20 @@ export const handlers = [
   }),
 
   http.post('/api/auth/register', async ({ request }) => {
-    await delay(800);
-    const body = await request.json();
-    const exists = users.find(u => u.email === body.email);
-    if (exists) return HttpResponse.json({ message: 'Email уже занят' }, { status: 409 });
-    users.push({
-      id: `u${users.length + 1}`, email: body.email, username: body.username,
-      role: 'student', age: body.age || null, parent_email: body.parent_email || null, is_active: false,
-    });
-    return HttpResponse.json({ message: 'Успешно. Проверьте email.', csrfToken: `csrf-${Date.now()}` }, { status: 201 });
-  }),
-
+  await delay(800);
+  const body = await request.json();
+  const exists = users.find(u => u.email === body.email);
+  if (exists) {
+    return HttpResponse.json({ message: 'Пользователь с таким email уже существует' }, { status: 409 });
+  }
+  users.push({
+    id: `u${users.length + 1}`,
+    email: body.email,
+    username: body.name,
+    role: 'student',
+  });
+  return HttpResponse.json({ message: 'Успешная регистрация', csrfToken: `csrf-${Date.now()}` }, { status: 201 });
+}),
   http.post('/api/auth/logout', async () => {
     await delay(300);
     return HttpResponse.json({ message: 'Выход выполнен' }, { status: 200 });

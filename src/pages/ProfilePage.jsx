@@ -1,142 +1,274 @@
-import { Typography, Card, Descriptions, Button, Tag, Popconfirm, message, Avatar } from 'antd';
-import { UserOutlined, MailOutlined, SafetyCertificateOutlined, DeleteOutlined, CrownOutlined, TeamOutlined, BookOutlined } from '@ant-design/icons';
+import { motion } from 'framer-motion';
 import { useSelector } from 'react-redux';
+import {
+  UserOutlined,
+  MailOutlined,
+  SafetyCertificateOutlined,
+  ThunderboltOutlined,
+  CheckCircleFilled,
+  BookOutlined,
+} from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 25 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
 
 const roleMap = {
-  student: { label: 'Обучающийся', color: '#2563EB', bg: '#EFF6FF', icon: <BookOutlined /> },
-  teacher: { label: 'Преподаватель', color: '#16A34A', bg: '#F0FDF4', icon: <TeamOutlined /> },
-  admin: { label: 'Администратор', color: '#DC2626', bg: '#FEF2F2', icon: <CrownOutlined /> },
+  student: { label: 'Ученик', color: '#405BBC', bg: '#F0F3FC' },
+  teacher: { label: 'Учитель', color: '#2E9E6B', bg: '#E8F7F0' },
+  admin: { label: 'Администратор', color: '#F88545', bg: '#FFF4EC' },
 };
 
 export default function ProfilePage() {
-  const { user } = useSelector(s => s.auth);
-  const { items: progressItems } = useSelector(s => s.progress);
+  const { user } = useSelector((state) => state.auth);
+  const { items: progressItems } = useSelector((state) => state.progress);
 
-  if (!user) return null;
-
-  const role = roleMap[user.role] || roleMap.student;
-  const completedCount = progressItems.filter(p => p.status === 'completed').length;
+  const completedCount = progressItems.filter((p) => p.status === 'completed').length;
+  const role = roleMap[user?.role] || roleMap.student;
 
   return (
-    <div className="animate-fade-in" style={{ maxWidth: 700, margin: '0 auto' }}>
-      <div style={{ marginBottom: 32 }}>
-        <Title level={2} style={{ fontWeight: 800, marginBottom: 4, fontSize: 32, letterSpacing: '-0.02em' }}>
-          <UserOutlined style={{ marginRight: 12 }} />
-          Личный кабинет
-        </Title>
-        <Text type="secondary" style={{ fontSize: 15 }}>Управление вашими данными и просмотр статистики обучения</Text>
-      </div>
-
-      {/* Profile Card */}
-      <Card
-        style={{
-          borderRadius: 24, marginBottom: 24, border: '1px solid #E2E8F0',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.04)', overflow: 'hidden',
-        }}
-        bodyStyle={{ padding: 0 }}
+    <motion.div
+      style={styles.page}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div
+        style={styles.card}
+        variants={itemVariants}
+        whileHover={{ y: -4, boxShadow: '0 16px 40px rgba(64, 91, 188, 0.12)' }}
       >
-        {/* Cover */}
-        <div style={{
-          height: 100,
-          background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 40%, #60A5FA 100%)',
-          backgroundSize: '200% 200%',
-          animation: 'gradientShift 4s ease infinite',
-        }} />
-
-        {/* Avatar + Info */}
-        <div style={{ textAlign: 'center', marginTop: -44, marginBottom: 8 }}>
-          <Avatar
-            size={88}
-            icon={<UserOutlined />}
-            style={{
-              backgroundColor: '#FFFFFF',
-              color: '#2563EB',
-              border: '5px solid #FFFFFF',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-            }}
-          />
-        </div>
-
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={3} style={{ fontWeight: 700, marginBottom: 4 }}>{user.username}</Title>
-          <Tag style={{
-            borderRadius: 10, fontSize: 13, padding: '6px 16px', fontWeight: 600,
-            background: role.bg, color: role.color, border: 'none',
-          }}>
-            {role.icon} {role.label}
-          </Tag>
-        </div>
-
-        {/* Mini Stats */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 40, marginBottom: 28, padding: '0 28px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#16A34A' }}>{completedCount}</div>
-            <Text style={{ fontSize: 12, color: '#94A3B8' }}>Пройдено</Text>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#2563EB' }}>{progressItems.length - completedCount}</div>
-            <Text style={{ fontSize: 12, color: '#94A3B8' }}>В процессе</Text>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#D97706' }}>{progressItems.length}</div>
-            <Text style={{ fontSize: 12, color: '#94A3B8' }}>Начато</Text>
-          </div>
-        </div>
-
-        {/* Details */}
-        <div style={{ padding: '0 28px 28px', borderTop: '1px solid #E2E8F0', paddingTop: 24 }}>
-          <Descriptions
-            column={1}
-            size="large"
-            labelStyle={{ fontWeight: 600, color: '#475569', fontSize: 13 }}
-            contentStyle={{ fontSize: 15 }}
+        {/* ШАПКА ПРОФИЛЯ */}
+        <div style={styles.header}>
+          <motion.div
+            style={styles.avatar}
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.2 }}
           >
-            <Descriptions.Item label={<><UserOutlined /> Псевдоним</>}>
-              <Text strong>{user.username}</Text>
-            </Descriptions.Item>
-            <Descriptions.Item label={<><MailOutlined /> Email</>}>
-              <Text>{user.email}</Text>
-            </Descriptions.Item>
-            <Descriptions.Item label={<><SafetyCertificateOutlined /> Роль</>}>
-              <Tag style={{ borderRadius: 8, background: role.bg, color: role.color, border: 'none', fontWeight: 600 }}>
-                {role.icon} {role.label}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label={<><SafetyCertificateOutlined /> ID пользователя</>}>
-              <Text code style={{ borderRadius: 6 }}>{user.id}</Text>
-            </Descriptions.Item>
-          </Descriptions>
+            <UserOutlined style={{ fontSize: 48, color: '#FFFFFF' }} />
+          </motion.div>
+          <div style={styles.headerInfo}>
+            <h2 style={styles.name}>{user?.username || 'Ученик'}</h2>
+            <span style={{
+              ...styles.roleBadge,
+              background: role.bg,
+              color: role.color,
+            }}>
+              {role.label}
+            </span>
+          </div>
         </div>
-      </Card>
 
-      {/* Danger Zone */}
-      <Card
-        title={<Text strong style={{ color: '#DC2626', fontSize: 15 }}>⚠️ Опасная зона</Text>}
-        style={{
-          borderRadius: 24, border: '1px solid #FECACA', background: '#FFF5F5',
-          boxShadow: '0 2px 8px rgba(220,38,38,0.06)',
-        }}
-        bodyStyle={{ padding: '24px 28px' }}
-      >
-        <Text type="secondary" style={{ display: 'block', marginBottom: 18, fontSize: 14, lineHeight: 1.6 }}>
-          После удаления аккаунта все ваши данные будут безвозвратно уничтожены. Прогресс обучения, баллы и достижения будут потеряны.
-        </Text>
-        <Popconfirm
-          title="Вы уверены, что хотите удалить аккаунт?"
-          description="Это действие невозможно отменить."
-          onConfirm={() => message.success('Запрос на удаление отправлен (демо-режим)')}
-          okText="Да, удалить"
-          cancelText="Отмена"
-          okButtonProps={{ danger: true, style: { borderRadius: 10 } }}
-          cancelButtonProps={{ style: { borderRadius: 10 } }}
-        >
-          <Button danger icon={<DeleteOutlined />} size="large" style={{ borderRadius: 12, fontWeight: 600 }}>
-            Удалить аккаунт
-          </Button>
-        </Popconfirm>
-      </Card>
-    </div>
+        <div style={styles.divider} />
+
+        {/* СТАТИСТИКА */}
+        <div style={styles.statsGrid}>
+          <motion.div
+            style={styles.statCard}
+            whileHover={{ y: -4, boxShadow: '0 8px 20px rgba(46, 158, 107, 0.15)' }}
+          >
+            <div style={styles.statIconGreen}>
+              <CheckCircleFilled style={{ fontSize: 24, color: '#FFFFFF' }} />
+            </div>
+            <div style={styles.statValue}>{completedCount}</div>
+            <div style={styles.statLabel}>Пройдено</div>
+          </motion.div>
+          <motion.div
+            style={styles.statCard}
+            whileHover={{ y: -4, boxShadow: '0 8px 20px rgba(64, 91, 188, 0.15)' }}
+          >
+            <div style={styles.statIconBlue}>
+              <BookOutlined style={{ fontSize: 24, color: '#FFFFFF' }} />
+            </div>
+            <div style={styles.statValue}>{progressItems.length}</div>
+            <div style={styles.statLabel}>Начато</div>
+          </motion.div>
+          <motion.div
+            style={styles.statCard}
+            whileHover={{ y: -4, boxShadow: '0 8px 20px rgba(248, 133, 69, 0.15)' }}
+          >
+            <div style={styles.statIconOrange}>
+              <ThunderboltOutlined style={{ fontSize: 24, color: '#FFFFFF' }} />
+            </div>
+            <div style={styles.statValue}>
+              {progressItems.reduce((sum, p) => sum + (p.score || 0), 0)}
+            </div>
+            <div style={styles.statLabel}>XP</div>
+          </motion.div>
+        </div>
+
+        <div style={styles.divider} />
+
+        {/* ДАННЫЕ */}
+        <div style={styles.infoList}>
+          <div style={styles.infoRow}>
+            <MailOutlined style={styles.infoIcon} />
+            <div>
+              <div style={styles.infoLabel}>Email</div>
+              <div style={styles.infoValue}>{user?.email || '—'}</div>
+            </div>
+          </div>
+          <div style={styles.infoRow}>
+            <SafetyCertificateOutlined style={styles.infoIcon} />
+            <div>
+              <div style={styles.infoLabel}>Роль</div>
+              <div style={styles.infoValue}>{role.label}</div>
+            </div>
+          </div>
+          <div style={styles.infoRow}>
+            <ThunderboltOutlined style={styles.infoIcon} />
+            <div>
+              <div style={styles.infoLabel}>ID</div>
+              <div style={styles.infoValue}>{user?.id || '—'}</div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
+
+const styles = {
+  page: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    minHeight: '100vh',
+    padding: '24px',
+  },
+  card: {
+    background: '#FFFFFF',
+    borderRadius: '20px',
+    padding: '32px',
+    boxShadow: '0 8px 32px rgba(20, 15, 65, 0.08)',
+    width: '100%',
+    maxWidth: '560px',
+    transition: 'all 200ms ease',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px',
+    marginBottom: '16px',
+  },
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: '20px',
+    background: '#405BBC',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  headerInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  name: {
+    fontSize: '24px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#130361',
+    fontWeight: 400,
+    margin: 0,
+  },
+  roleBadge: {
+    fontSize: '12px',
+    fontWeight: 600,
+    padding: '4px 12px',
+    borderRadius: '20px',
+    display: 'inline-block',
+    width: 'fit-content',
+  },
+  divider: {
+    height: '1px',
+    background: '#F1EDE2',
+    margin: '24px 0',
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '12px',
+  },
+  statCard: {
+    background: '#F9F7FF',
+    borderRadius: '12px',
+    padding: '16px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 200ms ease',
+  },
+  statIconGreen: {
+    width: 40,
+    height: 40,
+    borderRadius: '10px',
+    background: '#2E9E6B',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '0 auto 8px',
+  },
+  statIconBlue: {
+    width: 40,
+    height: 40,
+    borderRadius: '10px',
+    background: '#405BBC',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '0 auto 8px',
+  },
+  statIconOrange: {
+    width: 40,
+    height: 40,
+    borderRadius: '10px',
+    background: '#F88545',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '0 auto 8px',
+  },
+  statValue: {
+    fontSize: '20px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#140F41',
+  },
+  statLabel: {
+    fontSize: '11px',
+    color: '#8F8AA6',
+    fontFamily: "'Comfortaa', sans-serif",
+  },
+  infoList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+  },
+  infoRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  infoIcon: {
+    fontSize: '18px',
+    color: '#405BBC',
+    flexShrink: 0,
+  },
+  infoLabel: {
+    fontSize: '11px',
+    color: '#8F8AA6',
+    fontFamily: "'Comfortaa', sans-serif",
+  },
+  infoValue: {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: '#140F41',
+    fontFamily: "'Comfortaa', sans-serif",
+  },
+};

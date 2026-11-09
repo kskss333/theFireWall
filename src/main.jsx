@@ -11,8 +11,6 @@ async function bootstrap() {
   const { worker } = await import('./mocks/browser');
   await worker.start({ onUnhandledRequest: 'bypass' });
   console.log('[MSW] Мок-сервер запущен');
-
-  // Восстанавливаем прогресс из localStorage при старте
   try {
     await fetch('/api/progress/restore');
     console.log('[MSW] Прогресс восстановлен из localStorage');

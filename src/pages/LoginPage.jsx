@@ -1,156 +1,247 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Typography, Card, message } from 'antd';
-import { MailOutlined, LockOutlined, SafetyCertificateOutlined, ArrowRightOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginThunk } from '@/features/auth/authSlice';
-
-const { Title, Text } = Typography;
+import { motion } from 'framer-motion';
+import { loginThunk, clearError } from '@/features/auth/authSlice';
+import {  MailOutlined, LockOutlined, ArrowRightOutlined, ThunderboltOutlined } from '@ant-design/icons';
 
 export default function LoginPage() {
   const dispatch = useDispatch();
-  const nav = useNavigate();
-  const { status, error, isAuthenticated } = useSelector(s => s.auth);
-  const [tries, setTries] = useState(0);
-  const [lock, setLock] = useState(null);
-  const isLocked = lock ? new Date().getTime() < lock : false;
+  const navigate = useNavigate();
+  const { status, error, isAuthenticated } = useSelector((state) => state.auth);
 
-  useEffect(() => { if (isAuthenticated) nav('/catalog', { replace: true }); }, [isAuthenticated, nav]);
-  useEffect(() => { if (error) message.error(error); }, [error]);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
 
-  const submit = async (v) => {
-    if (isLocked) {
-      message.warning(`Слишком много попыток. Подождите ${Math.ceil((lock - Date.now()) / 1000)} сек.`);
-      return;
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/catalog');
     }
-    const r = await dispatch(loginThunk({ email: v.email, password: v.password }));
-    if (r.meta.requestStatus === 'rejected') {
-      const n = tries + 1; setTries(n);
-      if (n > 3) setLock(Date.now() + Math.min(2 ** (n - 3) * 1000, 300000));
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const validate = () => {
+    const newErrors = {};
+    if (!email) newErrors.email = 'Введите email';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Некорректный email';
+    if (!password) newErrors.password = 'Введите пароль';
+    else if (password.length < 6) newErrors.password = 'Минимум 6 символов';
+    return newErrors;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const newErrors = validate();
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length === 0) {
+      dispatch(loginThunk({ email, password }));
     }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 25%, #EEF2FF 50%, #FAFEFF 100%)',
-      padding: 24, position: 'relative', overflow: 'hidden',
-    }}>
-      {/* Decorative blobs */}
-      <div style={{ position: 'absolute', top: -120, right: -80, width: 400, height: 400, background: 'radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: -100, left: -60, width: 350, height: 350, background: 'radial-gradient(circle, rgba(22,163,74,0.05) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-
-      <Card
-        style={{
-          width: '100%', maxWidth: 460, borderRadius: 24,
-          boxShadow: '0 25px 60px rgba(37,99,235,0.08), 0 8px 20px rgba(0,0,0,0.04)',
-          border: '1px solid #E2E8F0', position: 'relative', zIndex: 1,
-        }}
-        bodyStyle={{ padding: '44px 36px' }}
+    <div style={styles.page}>
+      <motion.div
+        style={styles.card}
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
       >
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 20,
-            background: 'linear-gradient(135deg, #2563EB, #3B82F6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 20px',
-            boxShadow: '0 10px 30px rgba(37,99,235,0.3)',
-          }}>
-            <SafetyCertificateOutlined style={{ fontSize: 36, color: '#FFFFFF' }} />
-          </div>
-          <Title level={2} style={{ fontWeight: 800, marginBottom: 6, fontSize: 28, letterSpacing: '-0.02em' }}>
-            С возвращением!
-          </Title>
-          <Text type="secondary" style={{ fontSize: 15 }}>Войдите в свой аккаунт CyberEdu</Text>
+        <div style={styles.logo}>
+          <ThunderboltOutlined style={{ fontSize: 32, color: '#F88545' }} />
+          <span style={styles.logoText}>THE FIREWALL</span>
         </div>
+        <h1 style={styles.title}>Вход в платформу</h1>
+        <p style={styles.subtitle}>Рады видеть вас снова</p>
 
-        {/* Form */}
-        <Form layout="vertical" onFinish={submit} size="large" requiredMark={false}>
-          <Form.Item
-            name="email"
-            rules={[
-              { required: true, message: 'Введите email' },
-              { type: 'email', message: 'Некорректный формат email' },
-            ]}
-          >
-            <Input
-              prefix={<MailOutlined style={{ color: '#94A3B8' }} />}
-              placeholder="Электронная почта"
-              style={{ borderRadius: 14, height: 52, fontSize: 15 }}
-            />
-          </Form.Item>
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.field}>
+            <label style={styles.label}>Email</label>
+            <div style={styles.inputWrapper}>
+              <MailOutlined style={styles.inputIcon} />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@school.ru"
+                style={{ ...styles.input, borderColor: errors.email ? '#D9534F' : '#E8E3D5' }}
+              />
+            </div>
+            {errors.email && <span style={styles.errorText}>{errors.email}</span>}
+          </div>
 
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: 'Введите пароль' }]}
-          >
-            <Input.Password
-              prefix={<LockOutlined style={{ color: '#94A3B8' }} />}
-              placeholder="Пароль"
-              iconRender={visible => visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />}
-              style={{ borderRadius: 14, height: 52, fontSize: 15 }}
-            />
-          </Form.Item>
+          <div style={styles.field}>
+            <label style={styles.label}>Пароль</label>
+            <div style={styles.inputWrapper}>
+              <LockOutlined style={styles.inputIcon} />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{ ...styles.input, borderColor: errors.password ? '#D9534F' : '#E8E3D5' }}
+              />
+            </div>
+            {errors.password && <span style={styles.errorText}>{errors.password}</span>}
+          </div>
 
-          <Form.Item style={{ marginBottom: 16 }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={status === 'loading'}
-              block
-              disabled={isLocked}
-              icon={<ArrowRightOutlined />}
-              style={{
-                height: 54, borderRadius: 14, fontSize: 16, fontWeight: 600,
-                boxShadow: '0 6px 24px rgba(37,99,235,0.35)',
-                letterSpacing: '0.01em',
-              }}
+          {error && (
+            <motion.div
+              style={styles.serverError}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
             >
-              Войти в аккаунт
-            </Button>
-          </Form.Item>
-        </Form>
+              {error}
+            </motion.div>
+          )}
 
-        {/* Links */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <Link to="/register" style={{ fontSize: 14, fontWeight: 500, color: '#2563EB' }}>
-            Нет аккаунта? Зарегистрироваться
-          </Link>
-        </div>
+          <motion.button
+            type="submit"
+            style={styles.submitBtn}
+            whileHover={{ scale: 1.02, boxShadow: '0 12px 32px rgba(64, 91, 188, 0.35)' }}
+            whileTap={{ scale: 0.98 }}
+            disabled={status === 'loading'}
+          >
+            {status === 'loading' ? 'Входим...' : 'Войти'}
+            {status !== 'loading' && <ArrowRightOutlined style={{ marginLeft: 8 }} />}
+          </motion.button>
+        </form>
 
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
-          <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Демо-доступ</Text>
-          <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
-        </div>
-
-        {/* Demo credentials */}
-        <div style={{
-          padding: 20, borderRadius: 16,
-          background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)',
-          border: '1px solid #BBF7D0',
-        }}>
-          <Text strong style={{ color: '#16A34A', fontSize: 13, display: 'block', marginBottom: 10 }}>
-            🔑 Данные для входа:
-          </Text>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: '#374151', lineHeight: 2 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#64748B' }}>Ученик:</span>
-              <span>student@test.ru / password</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#64748B' }}>Учитель:</span>
-              <span>teacher@test.ru / password</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#64748B' }}>Админ:</span>
-              <span>admin@test.ru / password</span>
-            </div>
-          </div>
-        </div>
-      </Card>
+        <p style={styles.footer}>
+          Нет аккаунта? <Link to="/register" style={styles.link}>Зарегистрироваться</Link>
+        </p>
+      </motion.div>
     </div>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#FFF9EC',
+    padding: '24px',
+  },
+  card: {
+    background: '#FFFFFF',
+    borderRadius: '20px',
+    padding: '48px',
+    maxWidth: '440px',
+    width: '100%',
+    boxShadow: '0 8px 40px rgba(20, 15, 65, 0.08)',
+  },
+  logo: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    marginBottom: '24px',
+  },
+  logoText: {
+    fontSize: '18px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#130361',
+    fontWeight: 400,
+  },
+  title: {
+    fontSize: '28px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#130361',
+    textAlign: 'center',
+    marginBottom: '8px',
+    fontWeight: 400,
+  },
+  subtitle: {
+    fontSize: '14px',
+    fontFamily: "'Comfortaa', sans-serif",
+    color: '#8F8AA6',
+    textAlign: 'center',
+    marginBottom: '32px',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  label: {
+    fontSize: '13px',
+    fontFamily: "'Comfortaa', sans-serif",
+    fontWeight: 600,
+    color: '#140F41',
+  },
+  inputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: '14px',
+    color: '#8F8AA6',
+    fontSize: '16px',
+  },
+  input: {
+    width: '100%',
+    padding: '14px 16px 14px 42px',
+    fontFamily: "'Comfortaa', sans-serif",
+    fontSize: '15px',
+    color: '#140F41',
+    background: '#FFFFFF',
+    border: '1px solid #E8E3D5',
+    borderRadius: '8px',
+    outline: 'none',
+    transition: 'border-color 150ms ease, box-shadow 150ms ease',
+  },
+  errorText: {
+    fontSize: '12px',
+    fontFamily: "'Comfortaa', sans-serif",
+    color: '#D9534F',
+  },
+  serverError: {
+    background: '#FBECEC',
+    color: '#D9534F',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontFamily: "'Comfortaa', sans-serif",
+  },
+  submitBtn: {
+    background: '#405BBC',
+    color: '#FFFFFF',
+    fontFamily: "'Comfortaa', sans-serif",
+    fontSize: '16px',
+    fontWeight: 600,
+    padding: '16px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 150ms ease',
+  },
+  footer: {
+    fontSize: '14px',
+    fontFamily: "'Comfortaa', sans-serif",
+    color: '#8F8AA6',
+    textAlign: 'center',
+    marginTop: '24px',
+  },
+  link: {
+    color: '#405BBC',
+    fontWeight: 600,
+    textDecoration: 'none',
+  },
+};

@@ -1,158 +1,301 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Typography, Card, Checkbox, message } from 'antd';
-import { MailOutlined, LockOutlined, UserOutlined, ArrowRightOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import { useDispatch } from 'react-redux';
-import { registerThunk } from '@/features/auth/authSlice';
-
-const { Title, Text } = Typography;
+import { useDispatch, useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
+import { registerThunk, clearError } from '@/features/auth/authSlice';
+import { ThunderboltOutlined, MailOutlined, LockOutlined, UserOutlined, ArrowRightOutlined } from '@ant-design/icons';
 
 export default function RegisterPage() {
   const dispatch = useDispatch();
-  const nav = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { status, error } = useSelector((state) => state.auth);
 
-  const submit = async (v) => {
-    setLoading(true);
-    const r = await dispatch(registerThunk({
-      email: v.email,
-      username: v.username,
-      password: v.password,
-    }));
-    setLoading(false);
-    if (r.meta.requestStatus === 'fulfilled') {
-      message.success('🎉 Регистрация прошла успешно! Теперь вы можете войти.');
-      nav('/login');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (error) dispatch(clearError());
+  }, [error, dispatch]);
+
+  const validate = () => {
+    const newErrors = {};
+    if (!name) newErrors.name = 'Введите имя';
+    else if (name.length < 2) newErrors.name = 'Минимум 2 символа';
+    if (!email) newErrors.email = 'Введите email';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Некорректный email';
+    if (!password) newErrors.password = 'Введите пароль';
+    else if (password.length < 8) newErrors.password = 'Минимум 8 символов';
+    return newErrors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const newErrors = validate();
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length === 0) {
+      const result = await dispatch(registerThunk({ name, email, password }));
+      if (result.meta.requestStatus === 'fulfilled') {
+        setSuccess(true);
+        setTimeout(() => navigate('/login'), 1500);
+      }
     }
   };
 
+  if (success) {
+    return (
+      <div style={styles.page}>
+        <motion.div
+          style={styles.successCard}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <ThunderboltOutlined style={{ fontSize: 48, color: '#F88545' }} />
+          <h1 style={styles.successTitle}>Аккаунт создан!</h1>
+          <p style={styles.successText}>Сейчас перенаправим вас на страницу входа...</p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 25%, #EFF6FF 50%, #FAFEFF 100%)',
-      padding: 24, position: 'relative', overflow: 'hidden',
-    }}>
-      {/* Decorative blobs */}
-      <div style={{ position: 'absolute', top: -100, left: -80, width: 380, height: 380, background: 'radial-gradient(circle, rgba(22,163,74,0.06) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: -120, right: -60, width: 350, height: 350, background: 'radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-
-      <Card
-        style={{
-          width: '100%', maxWidth: 500, borderRadius: 24,
-          boxShadow: '0 25px 60px rgba(22,163,74,0.08), 0 8px 20px rgba(0,0,0,0.04)',
-          border: '1px solid #E2E8F0', position: 'relative', zIndex: 1,
-        }}
-        bodyStyle={{ padding: '44px 36px' }}
+    <div style={styles.page}>
+      <motion.div
+        style={styles.card}
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
       >
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 20,
-            background: 'linear-gradient(135deg, #16A34A, #22C55E)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 20px',
-            boxShadow: '0 10px 30px rgba(22,163,74,0.3)',
-          }}>
-            <SafetyCertificateOutlined style={{ fontSize: 36, color: '#FFFFFF' }} />
+        <div style={styles.logo}>
+          <ThunderboltOutlined style={{ fontSize: 32, color: '#F88545' }} />
+          <span style={styles.logoText}>THE FIREWALL</span>
+        </div>
+        <h1 style={styles.title}>Регистрация</h1>
+        <p style={styles.subtitle}>Создайте аккаунт, чтобы начать обучение</p>
+
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.field}>
+            <label style={styles.label}>Имя</label>
+            <div style={styles.inputWrapper}>
+              <UserOutlined style={styles.inputIcon} />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Как вас зовут?"
+                style={{ ...styles.input, borderColor: errors.name ? '#D9534F' : '#E8E3D5' }}
+              />
+            </div>
+            {errors.name && <span style={styles.errorText}>{errors.name}</span>}
           </div>
-          <Title level={2} style={{ fontWeight: 800, marginBottom: 6, fontSize: 28, letterSpacing: '-0.02em' }}>
-            Регистрация
-          </Title>
-          <Text type="secondary" style={{ fontSize: 15 }}>
-            Создайте аккаунт и начните обучение кибербезопасности
-          </Text>
-        </div>
 
-        {/* Form */}
-        <Form layout="vertical" onFinish={submit} size="large" requiredMark={false}>
-          <Form.Item
-            name="username"
-            rules={[
-              { required: true, message: 'Придумайте псевдоним' },
-              { min: 3, message: 'Минимум 3 символа' },
-              { max: 32, message: 'Максимум 32 символа' },
-            ]}
-          >
-            <Input
-              prefix={<UserOutlined style={{ color: '#94A3B8' }} />}
-              placeholder="Псевдоним"
-              style={{ borderRadius: 14, height: 52, fontSize: 15 }}
-            />
-          </Form.Item>
+          <div style={styles.field}>
+            <label style={styles.label}>Email</label>
+            <div style={styles.inputWrapper}>
+              <MailOutlined style={styles.inputIcon} />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@school.ru"
+                style={{ ...styles.input, borderColor: errors.email ? '#D9534F' : '#E8E3D5' }}
+              />
+            </div>
+            {errors.email && <span style={styles.errorText}>{errors.email}</span>}
+          </div>
 
-          <Form.Item
-            name="email"
-            rules={[
-              { required: true, message: 'Введите email' },
-              { type: 'email', message: 'Некорректный формат email' },
-            ]}
-          >
-            <Input
-              prefix={<MailOutlined style={{ color: '#94A3B8' }} />}
-              placeholder="Электронная почта"
-              style={{ borderRadius: 14, height: 52, fontSize: 15 }}
-            />
-          </Form.Item>
+          <div style={styles.field}>
+            <label style={styles.label}>Пароль</label>
+            <div style={styles.inputWrapper}>
+              <LockOutlined style={styles.inputIcon} />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Минимум 8 символов"
+                style={{ ...styles.input, borderColor: errors.password ? '#D9534F' : '#E8E3D5' }}
+              />
+            </div>
+            {errors.password && <span style={styles.errorText}>{errors.password}</span>}
+          </div>
 
-          <Form.Item
-            name="password"
-            rules={[
-              { required: true, message: 'Придумайте пароль' },
-              { min: 8, message: 'Минимум 8 символов' },
-              {
-                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)|(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])|(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9])|(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/,
-                message: 'Символы минимум трёх классов (A-Z, a-z, 0-9, спецсимволы)',
-              },
-            ]}
-          >
-            <Input.Password
-              prefix={<LockOutlined style={{ color: '#94A3B8' }} />}
-              placeholder="Пароль"
-              style={{ borderRadius: 14, height: 52, fontSize: 15 }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="consent"
-            valuePropName="checked"
-            rules={[
-              { validator: (_, v) => v ? Promise.resolve() : Promise.reject('Необходимо согласие на обработку данных') },
-            ]}
-            style={{ marginBottom: 16 }}
-          >
-            <Checkbox style={{ fontSize: 13 }}>
-              Я согласен на обработку персональных данных в соответствии с{' '}
-              <a href="#" onClick={e => { e.preventDefault(); message.info('Политика конфиденциальности (демо-режим)'); }}>
-                политикой конфиденциальности
-              </a>
-            </Checkbox>
-          </Form.Item>
-
-          <Form.Item style={{ marginBottom: 16 }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              block
-              icon={<ArrowRightOutlined />}
-              style={{
-                height: 54, borderRadius: 14, fontSize: 16, fontWeight: 600,
-                boxShadow: '0 6px 24px rgba(22,163,74,0.35)',
-                letterSpacing: '0.01em',
-                background: 'linear-gradient(135deg, #16A34A, #22C55E)',
-              }}
+          {error && (
+            <motion.div
+              style={styles.serverError}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
             >
-              Зарегистрироваться
-            </Button>
-          </Form.Item>
-        </Form>
+              {error}
+            </motion.div>
+          )}
 
-        <div style={{ textAlign: 'center' }}>
-          <Link to="/login" style={{ fontSize: 14, fontWeight: 500, color: '#2563EB' }}>
-            Уже есть аккаунт? Войти
-          </Link>
-        </div>
-      </Card>
+          <motion.button
+            type="submit"
+            style={styles.submitBtn}
+            whileHover={{ scale: 1.02, boxShadow: '0 12px 32px rgba(64, 91, 188, 0.35)' }}
+            whileTap={{ scale: 0.98 }}
+            disabled={status === 'loading'}
+          >
+            {status === 'loading' ? 'Создаём...' : 'Зарегистрироваться'}
+            {status !== 'loading' && <ArrowRightOutlined style={{ marginLeft: 8 }} />}
+          </motion.button>
+        </form>
+
+        <p style={styles.footer}>
+          Уже есть аккаунт? <Link to="/login" style={styles.link}>Войти</Link>
+        </p>
+      </motion.div>
     </div>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#FFF9EC',
+    padding: '24px',
+  },
+  card: {
+    background: '#FFFFFF',
+    borderRadius: '20px',
+    padding: '48px',
+    maxWidth: '460px',
+    width: '100%',
+    boxShadow: '0 8px 40px rgba(20, 15, 65, 0.08)',
+  },
+  logo: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    marginBottom: '24px',
+  },
+  logoText: {
+    fontSize: '18px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#130361',
+    fontWeight: 400,
+  },
+  title: {
+    fontSize: '28px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#130361',
+    textAlign: 'center',
+    marginBottom: '8px',
+    fontWeight: 400,
+  },
+  subtitle: {
+    fontSize: '14px',
+    fontFamily: "'Comfortaa', sans-serif",
+    color: '#8F8AA6',
+    textAlign: 'center',
+    marginBottom: '32px',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  label: {
+    fontSize: '13px',
+    fontFamily: "'Comfortaa', sans-serif",
+    fontWeight: 600,
+    color: '#140F41',
+  },
+  inputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: '14px',
+    color: '#8F8AA6',
+    fontSize: '16px',
+  },
+  input: {
+    width: '100%',
+    padding: '14px 16px 14px 42px',
+    fontFamily: "'Comfortaa', sans-serif",
+    fontSize: '15px',
+    color: '#140F41',
+    background: '#FFFFFF',
+    border: '1px solid #E8E3D5',
+    borderRadius: '8px',
+    outline: 'none',
+    transition: 'border-color 150ms ease, box-shadow 150ms ease',
+  },
+  errorText: {
+    fontSize: '12px',
+    fontFamily: "'Comfortaa', sans-serif",
+    color: '#D9534F',
+  },
+  serverError: {
+    background: '#FBECEC',
+    color: '#D9534F',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontFamily: "'Comfortaa', sans-serif",
+  },
+  submitBtn: {
+    background: '#405BBC',
+    color: '#FFFFFF',
+    fontFamily: "'Comfortaa', sans-serif",
+    fontSize: '16px',
+    fontWeight: 600,
+    padding: '16px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 150ms ease',
+  },
+  footer: {
+    fontSize: '14px',
+    fontFamily: "'Comfortaa', sans-serif",
+    color: '#8F8AA6',
+    textAlign: 'center',
+    marginTop: '24px',
+  },
+  link: {
+    color: '#405BBC',
+    fontWeight: 600,
+    textDecoration: 'none',
+  },
+  successCard: {
+    background: '#FFFFFF',
+    borderRadius: '20px',
+    padding: '48px',
+    maxWidth: '400px',
+    width: '100%',
+    boxShadow: '0 8px 40px rgba(20, 15, 65, 0.08)',
+    textAlign: 'center',
+  },
+  successTitle: {
+    fontSize: '24px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#130361',
+    marginTop: '16px',
+    marginBottom: '8px',
+    fontWeight: 400,
+  },
+  successText: {
+    fontSize: '14px',
+    fontFamily: "'Comfortaa', sans-serif",
+    color: '#8F8AA6',
+  },
+};

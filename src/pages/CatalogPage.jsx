@@ -1,264 +1,466 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Input, Select, Tag, Typography, Spin, Button, Empty, Progress } from 'antd';
-import {
-  SearchOutlined, BookOutlined, ClockCircleOutlined,
-  ThunderboltOutlined, LoadingOutlined, TrophyOutlined,
-  MailOutlined, LockOutlined, TeamOutlined, SafetyCertificateOutlined,
-  WifiOutlined, StarFilled, FireOutlined,
-} from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
 import { fetchModules, setFilter, resetFilters } from '@/features/catalog/catalogSlice';
 import { fetchProgress } from '@/features/progress/progressSlice';
+import {
+  BookOutlined,
+  UserOutlined,
+  ArrowRightOutlined,
+  LockOutlined,
+  MessageOutlined,
+  SafetyCertificateOutlined,
+  HomeOutlined,
+  SearchOutlined,
+  TrophyOutlined,
+  FireOutlined,
+} from '@ant-design/icons';
 
-const { Title, Paragraph, Text } = Typography;
-
-const diffLabels = { basic: 'Базовый', advanced: 'Продвинутый' };
-const diffColors = { basic: '#16A34A', advanced: '#D97706' };
-const diffGradients = {
-  basic: 'linear-gradient(135deg, #F0FDF4, #DCFCE7)',
-  advanced: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)',
+const icons = {
+  mail: <MessageOutlined style={{ fontSize: 28, color: '#FFFFFF' }} />,
+  lock: <LockOutlined style={{ fontSize: 28, color: '#FFFFFF' }} />,
+  team: <UserOutlined style={{ fontSize: 28, color: '#FFFFFF' }} />,
+  safety: <SafetyCertificateOutlined style={{ fontSize: 28, color: '#FFFFFF' }} />,
+  shield: <SafetyCertificateOutlined style={{ fontSize: 28, color: '#FFFFFF' }} />,
+  wifi: <HomeOutlined style={{ fontSize: 28, color: '#FFFFFF' }} />,
 };
 
-const iconMap = {
-  mail: <MailOutlined style={{ fontSize: 28, color: '#DC2626' }} />,
-  lock: <LockOutlined style={{ fontSize: 28, color: '#2563EB' }} />,
-  team: <TeamOutlined style={{ fontSize: 28, color: '#D97706' }} />,
-  safety: <SafetyCertificateOutlined style={{ fontSize: 28, color: '#16A34A' }} />,
-  shield: <SafetyCertificateOutlined style={{ fontSize: 28, color: '#7C3AED' }} />,
-  wifi: <WifiOutlined style={{ fontSize: 28, color: '#0891B2' }} />,
-};
-
-const categoryColors = {
-  'Киберугрозы': { color: '#DC2626', bg: '#FEF2F2' },
-  'Защита данных': { color: '#2563EB', bg: '#EFF6FF' },
-  'Цифровая гигиена': { color: '#16A34A', bg: '#F0FDF4' },
-  'Криптография': { color: '#7C3AED', bg: '#F5F3FF' },
-  'Сетевая безопасность': { color: '#0891B2', bg: '#ECFEFF' },
+const difficultyLabels = {
+  basic: 'Базовый',
+  advanced: 'Продвинутый',
 };
 
 export default function CatalogPage() {
   const dispatch = useDispatch();
-  const nav = useNavigate();
-  const { modules, status, filters } = useSelector(s => s.catalog);
-  const { items: progress } = useSelector(s => s.progress);
+  const navigate = useNavigate();
+  const { modules, status, filters } = useSelector((state) => state.catalog);
+  const { items: progressItems } = useSelector((state) => state.progress);
+  const { user } = useSelector((state) => state.auth);
+  const [search, setSearch] = useState('');
 
-  useEffect(() => { dispatch(fetchModules()); dispatch(fetchProgress()); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchModules());
+    dispatch(fetchProgress());
+  }, [dispatch]);
 
-  const filtered = useMemo(() => {
-    let r = [...modules];
-    if (filters.category) r = r.filter(m => m.category === filters.category);
-    if (filters.difficulty) r = r.filter(m => m.difficulty === filters.difficulty);
-    if (filters.search) { const s = filters.search.toLowerCase(); r = r.filter(m => m.title.toLowerCase().includes(s) || m.description.toLowerCase().includes(s)); }
-    return r;
-  }, [modules, filters]);
+  const filteredModules = useMemo(() => {
+    let result = [...modules];
+    if (filters.category) result = result.filter((m) => m.category === filters.category);
+    if (filters.difficulty) result = result.filter((m) => m.difficulty === filters.difficulty);
+    if (search) {
+      const s = search.toLowerCase();
+      result = result.filter(
+        (m) => m.title.toLowerCase().includes(s) || m.description.toLowerCase().includes(s)
+      );
+    }
+    return result;
+  }, [modules, filters, search]);
 
-  const cats = useMemo(() => [...new Set(modules.map(m => m.category))], [modules]);
+  const completedCount = progressItems.filter((p) => p.status === 'completed').length;
+  const overallProgress = modules.length > 0
+    ? Math.round((completedCount / modules.length) * 100)
+    : 0;
 
-  const getProg = (id) => {
-    const p = progress.find(pi => pi.module_id === id);
-    if (!p) return null;
-    return p.score || 0;
+  const getModuleProgress = (moduleId) => {
+    const progress = progressItems.find((p) => p.module_id === moduleId);
+    if (!progress) return 0;
+    return progress.score || 0;
   };
 
-  const completedCount = progress.filter(p => p.status === 'completed').length;
-  const inProgressCount = progress.filter(p => p.status === 'in_progress').length;
-
-  if (status === 'loading') {
-    return (
-      <div style={{ textAlign: 'center', padding: 140 }}>
-        <Spin indicator={<LoadingOutlined style={{ fontSize: 44, color: '#2563EB' }} spin />} />
-        <Text style={{ display: 'block', marginTop: 20, color: '#94A3B8', fontSize: 15 }}>Загрузка каталога модулей...</Text>
-      </div>
-    );
-  }
-
   return (
-    <div className="animate-fade-in">
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <Title level={2} style={{ fontWeight: 800, marginBottom: 4, fontSize: 32, letterSpacing: '-0.02em' }}>
-          <BookOutlined style={{ marginRight: 12, color: '#2563EB' }} />
-          Каталог модулей
-        </Title>
-        <Text type="secondary" style={{ fontSize: 15 }}>
-          Выберите тему и начните обучение. {modules.length} модулей доступно.
-          {completedCount > 0 && <span style={{ color: '#16A34A', fontWeight: 600 }}> · Пройдено: {completedCount}</span>}
-          {inProgressCount > 0 && <span style={{ color: '#2563EB', fontWeight: 600 }}> · В процессе: {inProgressCount}</span>}
-        </Text>
-      </div>
+    <div style={styles.page}>
+      {/* ВЕРХНИЙ БЛОК */}
+      <motion.div
+        style={styles.hero}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div style={styles.heroLeft}>
+          <h1 style={styles.title}>Привет, {user?.username || 'ученик'}!</h1>
+          <p style={styles.subtitle}>
+            Выбери модуль и начни обучение. Или загляни в свой кабинет, чтобы увидеть прогресс.
+          </p>
+          <motion.button
+            style={styles.dashboardBtn}
+            onClick={() => navigate('/dashboard')}
+            whileHover={{ scale: 1.05, boxShadow: '0 12px 32px rgba(248, 133, 69, 0.35)' }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <UserOutlined style={{ marginRight: 8 }} />
+            Мой кабинет
+          </motion.button>
+        </div>
+        <motion.div
+          style={styles.heroStats}
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <div style={styles.heroStat}>
+            <TrophyOutlined style={{ fontSize: 32, color: '#F88545' }} />
+            <div>
+              <div style={styles.heroStatValue}>{completedCount}/{modules.length}</div>
+              <div style={styles.heroStatLabel}>Модулей пройдено</div>
+            </div>
+          </div>
+          <div style={styles.heroStat}>
+            <FireOutlined style={{ fontSize: 32, color: '#F88545' }} />
+            <div>
+              <div style={styles.heroStatValue}>{overallProgress}%</div>
+              <div style={styles.heroStatLabel}>Общий прогресс</div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
 
-      {/* Stats mini cards */}
-      {progress.length > 0 && (
-        <Row gutter={[16, 16]} style={{ marginBottom: 28 }}>
-          <Col xs={12} sm={6}>
-            <div style={{ background: 'linear-gradient(135deg, #F0FDF4, #DCFCE7)', borderRadius: 16, padding: '20px', border: '1px solid #BBF7D0' }}>
-              <TrophyOutlined style={{ fontSize: 24, color: '#16A34A', marginBottom: 8 }} />
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#16A34A' }}>{completedCount}</div>
-              <div style={{ fontSize: 13, color: '#166534' }}>Пройдено</div>
-            </div>
-          </Col>
-          <Col xs={12} sm={6}>
-            <div style={{ background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)', borderRadius: 16, padding: '20px', border: '1px solid #BFDBFE' }}>
-              <FireOutlined style={{ fontSize: 24, color: '#2563EB', marginBottom: 8 }} />
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#2563EB' }}>{inProgressCount}</div>
-              <div style={{ fontSize: 13, color: '#1E40AF' }}>В процессе</div>
-            </div>
-          </Col>
-          <Col xs={12} sm={6}>
-            <div style={{ background: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)', borderRadius: 16, padding: '20px', border: '1px solid #C4B5FD' }}>
-              <BookOutlined style={{ fontSize: 24, color: '#7C3AED', marginBottom: 8 }} />
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#7C3AED' }}>{modules.length}</div>
-              <div style={{ fontSize: 13, color: '#5B21B6' }}>Всего модулей</div>
-            </div>
-          </Col>
-          <Col xs={12} sm={6}>
-            <div style={{ background: 'linear-gradient(135deg, #FFFBEB, #FEF3C7)', borderRadius: 16, padding: '20px', border: '1px solid #FDE68A' }}>
-              <StarFilled style={{ fontSize: 24, color: '#D97706', marginBottom: 8 }} />
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#D97706' }}>{modules.length > 0 ? Math.round((completedCount / modules.length) * 100) : 0}%</div>
-              <div style={{ fontSize: 13, color: '#92400E' }}>Общий прогресс</div>
-            </div>
-          </Col>
-        </Row>
-      )}
+      {/* ФИЛЬТРЫ */}
+      <motion.div
+        style={styles.filters}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+      >
+        <div style={styles.searchWrapper}>
+          <SearchOutlined style={styles.searchIcon} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск модулей..."
+            style={styles.searchInput}
+          />
+        </div>
+        <div style={styles.filterButtons}>
+          {[
+            { value: null, label: 'Все' },
+            { value: 'basic', label: 'Базовый' },
+            { value: 'advanced', label: 'Продвинутый' },
+          ].map((filter) => (
+            <motion.button
+              key={filter.label}
+              style={{
+                ...styles.filterBtn,
+                background: filters.difficulty === filter.value ? '#405BBC' : '#FFFFFF',
+                color: filters.difficulty === filter.value ? '#FFFFFF' : '#140F41',
+                borderColor: filters.difficulty === filter.value ? '#405BBC' : '#E8E3D5',
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() =>
+                filter.value === null
+                  ? dispatch(resetFilters())
+                  : dispatch(setFilter({ difficulty: filter.value }))
+              }
+            >
+              {filter.label}
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
 
-      {/* Filters */}
-      <div style={{
-        background: '#FFF', borderRadius: 18, padding: '20px 24px', marginBottom: 28,
-        border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-      }}>
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={12} lg={6}>
-            <Input
-              prefix={<SearchOutlined style={{ color: '#94A3B8' }} />}
-              placeholder="Поиск модулей..."
-              value={filters.search}
-              onChange={e => dispatch(setFilter({ search: e.target.value }))}
-              style={{ borderRadius: 12, height: 46 }}
-              size="large"
-            />
-          </Col>
-          <Col xs={24} sm={6} lg={4}>
-            <Select
-              placeholder="Раздел"
-              allowClear
-              size="large"
-              style={{ width: '100%' }}
-              value={filters.category}
-              onChange={v => dispatch(setFilter({ category: v }))}
-              options={cats.map(c => ({ value: c, label: c }))}
-            />
-          </Col>
-          <Col xs={24} sm={6} lg={4}>
-            <Select
-              placeholder="Сложность"
-              allowClear
-              size="large"
-              style={{ width: '100%' }}
-              value={filters.difficulty}
-              onChange={v => dispatch(setFilter({ difficulty: v }))}
-              options={[
-                { value: 'basic', label: '🔹 Базовый' },
-                { value: 'advanced', label: '🔸 Продвинутый' },
-              ]}
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={4}>
-            <Button size="large" onClick={() => dispatch(resetFilters())} style={{ borderRadius: 12, fontWeight: 500 }}>
-              Сбросить фильтры
-            </Button>
-          </Col>
-        </Row>
-      </div>
-
-      {/* Module Grid */}
-      {filtered.length === 0 ? (
-        <Empty description={<span style={{ color: '#94A3B8' }}>Модули не найдены. Попробуйте изменить фильтры.</span>} style={{ marginTop: 80 }} />
-      ) : (
-        <Row gutter={[24, 24]} className="stagger-children">
-          {filtered.map((mod) => {
-            const prog = getProg(mod.id);
-            const catStyle = categoryColors[mod.category] || { color: '#6B7280', bg: '#F9FAFB' };
-            return (
-              <Col xs={24} sm={12} lg={8} key={mod.id}>
-                <Card
-                  hoverable
-                  onClick={() => nav(`/module/${mod.id}`)}
+      {/* КАРТОЧКИ */}
+      <motion.div
+        style={styles.grid}
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: {},
+          visible: { transition: { staggerChildren: 0.1 } },
+        }}
+      >
+        {filteredModules.map((module) => {
+          const progress = getModuleProgress(module.id);
+          const isCompleted = progress === 100;
+          const isStarted = progress > 0 && progress < 100;
+          return (
+            <motion.div
+              key={module.id}
+              style={styles.card}
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+              }}
+              whileHover={{
+                y: -8,
+                boxShadow: '0 16px 40px rgba(64, 91, 188, 0.20)',
+                borderColor: '#405BBC',
+              }}
+              onClick={() => navigate(`/module/${module.id}`)}
+            >
+              <div style={styles.cardHeader}>
+                <div
                   style={{
-                    borderRadius: 20, border: '1px solid #E2E8F0', height: '100%', overflow: 'hidden',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)', cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
+                    ...styles.cardIcon,
+                    background: isCompleted ? '#2E9E6B' : isStarted ? '#405BBC' : '#405BBC',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)'; }}
-                  bodyStyle={{ padding: '28px 24px 24px' }}
                 >
-                  {/* Top row: icon + difficulty badge */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 16, background: catStyle.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {iconMap[mod.icon] || <BookOutlined style={{ fontSize: 26, color: '#2563EB' }} />}
-                    </div>
-                    <Tag style={{
-                      borderRadius: 10, margin: 0, fontWeight: 600, fontSize: 12, padding: '4px 12px',
-                      background: diffGradients[mod.difficulty], color: diffColors[mod.difficulty], border: 'none',
-                    }}>
-                      {diffLabels[mod.difficulty]}
-                    </Tag>
-                  </div>
+                  {icons[module.icon] || <BookOutlined style={{ fontSize: 28, color: '#FFFFFF' }} />}
+                </div>
+                <span style={{
+                  ...styles.difficultyBadge,
+                  background: module.difficulty === 'basic' ? '#E8F7F0' : '#FFF4EC',
+                  color: module.difficulty === 'basic' ? '#2E9E6B' : '#F88545',
+                }}>
+                  {difficultyLabels[module.difficulty]}
+                </span>
+              </div>
 
-                  {/* Title + Description */}
-                  <Title level={4} style={{ fontWeight: 700, marginBottom: 8, fontSize: 18, color: '#0F172A' }}>{mod.title}</Title>
-                  <Paragraph ellipsis={{ rows: 2 }} style={{ color: '#64748B', marginBottom: 16, fontSize: 14, lineHeight: 1.6 }}>
-                    {mod.description}
-                  </Paragraph>
+              <h3 style={styles.cardTitle}>{module.title}</h3>
+              <p style={styles.cardDescription}>{module.description}</p>
 
-                  {/* Tags row */}
-                  <div style={{ marginBottom: 18, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <Tag style={{ borderRadius: 8, background: catStyle.bg, color: catStyle.color, border: 'none', fontWeight: 500, fontSize: 12 }}>
-                      {mod.category}
-                    </Tag>
-                    {mod.duration && (
-                      <Tag icon={<ClockCircleOutlined />} style={{ borderRadius: 8, fontWeight: 500, fontSize: 12 }}>
-                        {mod.duration}
-                      </Tag>
-                    )}
-                  </div>
-
-                  {/* Progress bar */}
-                  {prog !== null && (
-                    <div style={{ marginBottom: 16 }}>
-                      <Progress
-                        percent={prog}
-                        size="small"
-                        strokeColor={prog === 100 ? '#16A34A' : '#2563EB'}
-                        trailColor="#E2E8F0"
-                        format={() => `${prog}%`}
-                        style={{ marginBottom: 4 }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Action button */}
-                  <Button
-                    type={prog !== null && prog > 0 ? 'default' : 'primary'}
-                    block
-                    icon={<ThunderboltOutlined />}
-                    size="large"
+              <div style={styles.cardProgress}>
+                <div style={styles.cardProgressHeader}>
+                  <span style={styles.cardCategory}>{module.category}</span>
+                  <span style={{
+                    ...styles.cardProgressText,
+                    color: isCompleted ? '#2E9E6B' : '#405BBC',
+                  }}>
+                    {isCompleted ? 'Завершено' : isStarted ? `${progress}%` : 'Не начато'}
+                  </span>
+                </div>
+                <div style={styles.cardProgressBar}>
+                  <motion.div
                     style={{
-                      borderRadius: 12, fontWeight: 600, fontSize: 15, height: 46,
-                      ...(prog !== null && prog > 0 ? { borderColor: '#2563EB', color: '#2563EB' } : {}),
+                      ...styles.cardProgressFill,
+                      background: isCompleted ? '#2E9E6B' : '#405BBC',
                     }}
-                  >
-                    {prog !== null && prog === 100 ? '🔄 Пройти заново' :
-                     prog !== null && prog > 0 ? '▶ Продолжить' :
-                     '🚀 Начать модуль'}
-                  </Button>
-                </Card>
-              </Col>
-            );
-          })}
-        </Row>
-      )}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.8 }}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.cardAction}>
+                <span style={styles.cardActionText}>
+                  {isCompleted ? 'Пройти заново' : isStarted ? 'Продолжить' : 'Начать'}
+                </span>
+                <motion.div
+                  whileHover={{ x: 4 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ArrowRightOutlined style={{ color: '#405BBC', fontSize: 16 }} />
+                </motion.div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </motion.div>
     </div>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '32px',
+  },
+  hero: {
+    background: '#FFFFFF',
+    borderRadius: '20px',
+    padding: '32px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '24px',
+    flexWrap: 'wrap',
+    boxShadow: '0 4px 12px rgba(20, 15, 65, 0.06)',
+  },
+  heroLeft: {
+    flex: 1,
+    minWidth: '280px',
+  },
+  title: {
+    fontSize: '36px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#130361',
+    fontWeight: 400,
+    marginBottom: '8px',
+  },
+  subtitle: {
+    fontSize: '15px',
+    fontFamily: "'Comfortaa', sans-serif",
+    color: '#5A5478',
+    lineHeight: 1.5,
+    marginBottom: '20px',
+    maxWidth: '480px',
+  },
+  dashboardBtn: {
+    background: '#F88545',
+    color: '#FFFFFF',
+    fontFamily: "'Comfortaa', sans-serif",
+    fontSize: '15px',
+    fontWeight: 600,
+    padding: '14px 24px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'all 150ms ease',
+  },
+  heroStats: {
+    display: 'flex',
+    gap: '32px',
+    flexWrap: 'wrap',
+  },
+  heroStat: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  heroStatValue: {
+    fontSize: '24px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#130361',
+  },
+  heroStatLabel: {
+    fontSize: '12px',
+    color: '#8F8AA6',
+    fontFamily: "'Comfortaa', sans-serif",
+  },
+  filters: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '16px',
+    flexWrap: 'wrap',
+  },
+  searchWrapper: {
+    position: 'relative',
+    flex: 1,
+    minWidth: '240px',
+    maxWidth: '400px',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '14px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: '#8F8AA6',
+    fontSize: '16px',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '12px 16px 12px 42px',
+    fontFamily: "'Comfortaa', sans-serif",
+    fontSize: '14px',
+    color: '#140F41',
+    background: '#FFFFFF',
+    border: '1px solid #E8E3D5',
+    borderRadius: '8px',
+    outline: 'none',
+    transition: 'all 150ms ease',
+  },
+  filterButtons: {
+    display: 'flex',
+    gap: '8px',
+  },
+  filterBtn: {
+    padding: '10px 20px',
+    fontFamily: "'Comfortaa', sans-serif",
+    fontSize: '14px',
+    fontWeight: 600,
+    borderRadius: '8px',
+    border: '1px solid #E8E3D5',
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+    gap: '20px',
+  },
+  card: {
+    background: '#FFFFFF',
+    borderRadius: '16px',
+    padding: '24px',
+    boxShadow: '0 4px 12px rgba(20, 15, 65, 0.06)',
+    cursor: 'pointer',
+    transition: 'all 200ms ease',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    border: '1px solid transparent',
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  cardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  difficultyBadge: {
+    fontSize: '12px',
+    fontWeight: 600,
+    padding: '4px 12px',
+    borderRadius: '20px',
+  },
+  cardTitle: {
+    fontSize: '20px',
+    fontFamily: "'Scripter', 'Comfortaa', sans-serif",
+    color: '#130361',
+    fontWeight: 400,
+    margin: 0,
+  },
+  cardDescription: {
+    fontSize: '14px',
+    fontFamily: "'Comfortaa', sans-serif",
+    color: '#5A5478',
+    lineHeight: 1.5,
+    margin: 0,
+    flex: 1,
+  },
+  cardProgress: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  cardProgressHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardCategory: {
+    fontSize: '12px',
+    color: '#8F8AA6',
+    fontFamily: "'Comfortaa', sans-serif",
+  },
+  cardProgressText: {
+    fontSize: '13px',
+    fontWeight: 600,
+  },
+  cardProgressBar: {
+    width: '100%',
+    height: '6px',
+    background: '#F1EDE2',
+    borderRadius: '3px',
+    overflow: 'hidden',
+  },
+  cardProgressFill: {
+    height: '100%',
+    borderRadius: '3px',
+  },
+  cardAction: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: '4px',
+  },
+  cardActionText: {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: '#405BBC',
+    fontFamily: "'Comfortaa', sans-serif",
+  },
+};

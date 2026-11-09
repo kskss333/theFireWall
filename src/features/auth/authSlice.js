@@ -1,37 +1,99 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '@/shared/api/apiClient';
 
-export const loginThunk = createAsyncThunk('auth/login', async (creds, { rejectWithValue }) => {
-  try { const r = await apiClient.post('/auth/login', creds); return r.data; }
-  catch (e) { return rejectWithValue(e.response?.data?.message || 'Ошибка'); }
-});
+export const registerThunk = createAsyncThunk(
+  'auth/register',
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post('/auth/register', userData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Ошибка регистрации');
+    }
+  }
+);
 
-export const registerThunk = createAsyncThunk('auth/register', async (data, { rejectWithValue }) => {
-  try { const r = await apiClient.post('/auth/register', data); return r.data; }
-  catch (e) { return rejectWithValue(e.response?.data?.message || 'Ошибка'); }
-});
+export const loginThunk = createAsyncThunk(
+  'auth/login',
+  async (credentials, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post('/auth/login', credentials);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Ошибка входа');
+    }
+  }
+);
 
-export const logoutThunk = createAsyncThunk('auth/logout', async () => { await apiClient.post('/auth/logout'); });
+export const logoutThunk = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Ошибка выхода');
+    }
+  }
+);
 
-const slice = createSlice({
+const authSlice = createSlice({
   name: 'auth',
-  initialState: { user: null, status: 'idle', error: null, isAuthenticated: false },
+  initialState: {
+    user: null,
+    status: 'idle',
+    error: null,
+    isAuthenticated: false,
+  },
   reducers: {
-    clearError(state) { state.error = null; },
+    clearError: (state) => {
+      state.error = null;
+    },
+    setUser: (state, action) => {
+      state.user = action.payload;
+      state.isAuthenticated = true;
+    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loginThunk.pending, s => { s.status = 'loading'; s.error = null; })
-      .addCase(loginThunk.fulfilled, (s, a) => {
-        s.status = 'succeeded';
-        s.user = a.payload.user;
-        s.isAuthenticated = true;
-        if (a.payload.csrfToken) sessionStorage.setItem('csrf_token', a.payload.csrfToken);
+      .addCase(registerThunk.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
       })
-      .addCase(loginThunk.rejected, (s, a) => { s.status = 'failed'; s.error = a.payload; })
-      .addCase(logoutThunk.fulfilled, s => { s.user = null; s.isAuthenticated = false; s.status = 'idle'; sessionStorage.removeItem('csrf_token'); });
+      .addCase(registerThunk.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        if (action.payload.csrfToken) {
+          sessionStorage.setItem('csrf_token', action.payload.csrfToken);
+        }
+      })
+      .addCase(registerThunk.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(loginThunk.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(loginThunk.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        if (action.payload.csrfToken) {
+          sessionStorage.setItem('csrf_token', action.payload.csrfToken);
+        }
+      })
+      .addCase(loginThunk.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(logoutThunk.fulfilled, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.status = 'idle';
+        sessionStorage.removeItem('csrf_token');
+      });
   },
 });
 
-export const { clearError } = slice.actions;
-export default slice.reducer;
+export const { clearError, setUser } = authSlice.actions;
+export default authSlice.reducer;

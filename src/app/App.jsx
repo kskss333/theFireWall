@@ -12,10 +12,11 @@ const CatalogPage = lazy(() => import('@/pages/CatalogPage'));
 const ModulePage = lazy(() => import('@/pages/ModulePage'));
 const ProgressPage = lazy(() => import('@/pages/ProgressPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const StudentDashboard = lazy(() => import('@/pages/StudentDashboard'));
 const TeacherDashboard = lazy(() => import('@/pages/TeacherDashboard'));
 const AdminPanel = lazy(() => import('@/pages/AdminPanel'));
 const ForbiddenPage = lazy(() => import('@/pages/ForbiddenPage'));
-
+const ParentDashboard = lazy(() => import('@/pages/ParentDashboard'));
 const Loader = () => (
   <div style={{
     display: 'flex', flexDirection: 'column', justifyContent: 'center',
@@ -47,11 +48,13 @@ const router = createBrowserRouter([
     element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
     children: [
       { path: 'catalog', element: <Suspense fallback={<Loader />}><CatalogPage /></Suspense> },
+      { path: 'dashboard', element: <Suspense fallback={<Loader />}><StudentDashboard /></Suspense> },
       { path: 'module/:moduleId', element: <Suspense fallback={<Loader />}><ModulePage /></Suspense> },
       { path: 'progress', element: <Suspense fallback={<Loader />}><ProgressPage /></Suspense> },
       { path: 'profile', element: <Suspense fallback={<Loader />}><ProfilePage /></Suspense> },
       { path: 'teacher', element: <RoleRoute roles={['teacher', 'admin']}><Suspense fallback={<Loader />}><TeacherDashboard /></Suspense></RoleRoute> },
       { path: 'admin', element: <RoleRoute roles={['admin']}><Suspense fallback={<Loader />}><AdminPanel /></Suspense></RoleRoute> },
+      { path: 'parent', element: <Suspense fallback={<Loader />}><ParentDashboard /></Suspense> },
     ],
   },
 ]);
